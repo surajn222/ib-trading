@@ -29,7 +29,7 @@ class ibrelay(EClient, EWrapper):
                                     columns=["datetime", "systemtime", 'reqid', "bidprice", "askprice", "bidSize",
                                              "askSize"])
         self.tck_df = pd.DataFrame()
-        self.combo_dict = {}
+        self.dict_scrip = {}
         self.extender = extender
         self.time_of_tick_data_prev = 0
 
@@ -45,8 +45,8 @@ class ibrelay(EClient, EWrapper):
 
         self.df["Time"] = pd.to_datetime(self.df["Time"])
         self.df['E_Time'] = (((self.df["Time"] - dt.datetime(1970, 1, 1)).dt.total_seconds()) / 60).astype(int)
-        self.combo_dict[reqId] = self.df[["Time", "E_Time", "Close"]].to_records()
-        self.combo_dict[reqId].resize((self.extender, 1))
+        self.dict_scrip[reqId] = self.df[["Time", "E_Time", "Close"]].to_records()
+        self.dict_scrip[reqId].resize((self.extender, 1))
         self.df = pd.DataFrame()
 
     def tickByTickBidAsk(self, reqId, time, bidPrice, askPrice,
@@ -64,8 +64,8 @@ class ibrelay(EClient, EWrapper):
         #global_dict[reqId] = bidPrice
 
 
-        # if (self.combo_dict[reqId - 2]["Time"].iloc[-1] != self.current_time):
-        #     self.combo_dict[reqId - 2] = self.combo_dict[reqId - 2].append(
+        # if (self.dict_scrip[reqId - 2]["Time"].iloc[-1] != self.current_time):
+        #     self.dict_scrip[reqId - 2] = self.dict_scrip[reqId - 2].append(
         #         {'E_Time': self.current_time, 'Close': round((bidPrice + askPrice) / 2, 5)}, ignore_index=True)
 
         '''

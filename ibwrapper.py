@@ -15,13 +15,15 @@ logging = initialize_logger("log")
 
 df = pd.DataFrame()
 global_bidPrice = 0
+dict_size = {}
+dict_scrip = {}
 
 class ibwrapper(object):
     def __init__(self, extender, list_scrips):
         self.df_hist = pd.DataFrame()
         global df
         self.local_app = ibrelay(extender)
-        self.combo_dict = {}
+        self.dict_scrip = {}
         self.reqid = self.get_req_id()
         self.list_scrips = list_scrips
 
@@ -93,6 +95,9 @@ class ibwrapper(object):
     def check_if_current_time_is_minute_end(self, time_range):
         # for i in range(time):
         global df
+        global dict_scrip
+        global dict_size
+
         while True:
             time_now = epoch_to_datetime_second(int(t.time()))
             # time_of_tick_data = epoch_to_datetime_second(time_now)
@@ -113,6 +118,51 @@ class ibwrapper(object):
                 logging.info("Size of the above dataframe" + str(len(df.index)))
                 logging.info("\n\n\n")
                 time.sleep(1)
+
+                #Update Counter
+                logging.info("Printing Dict Size in check_if_current_time_is_minute_end ---")
+                logging.info(dict_size)
+
+                for k,v in dict_size.items():
+                    reqid_temp = k
+                    size_of_numpy_array = v
+
+                logging.info("Req Id" + str(reqid_temp))
+                logging.info("size_of_numpy_array" + str(size_of_numpy_array))
+                #insert new values in record
+                #Print Record first
+                logging.info("Dict Scrip -----------------------------")
+
+                for k,v in dict_scrip.items():
+                    logging.info(type(k))
+                    logging.info(type(v))
+
+                #Add a static value next
+                logging.info(type(dict_scrip.get(reqid_temp)))
+
+                logging.info(dict_scrip.get(reqid_temp))
+
+                #dicr_scrip = {REQID: NUMPY_ARRAY, REQID2: NUMPY_ARRY2}
+
+
+
+                dict_scrip.get(reqid_temp)["Close"][0] = 9999
+                dict_scrip.get(reqid_temp)["Close"][1] = 9999
+                dict_scrip.get(reqid_temp)["Close"][2] = 9999
+                dict_scrip.get(reqid_temp)["Close"][3] = 9999
+
+                logging.info(dict_scrip.get(reqid_temp)["Close"][0:4])
+
+
+                logging.info("Data Insertion -----------------------------------------------------")
+                dict_scrip.get(reqid_temp)["Close"][size_of_numpy_array] = (global_bidPrice + global_askPrice) / 2
+                logging.info(dict_scrip.get(reqid_temp)["Close"][size_of_numpy_array])
+
+                logging.info("Printing Numpy Array")
+                logging.info(dict_scrip.get(reqid_temp)[1000:1020])
+
+
+
             else:
                 logging.info("Current time is not a minute " + str(time_now))
                 time.sleep(1)
@@ -198,14 +248,15 @@ class ibrelay(EClient, EWrapper):
                                     columns=["datetime", "systemtime", 'reqid', "bidprice", "askprice", "bidSize",
                                              "askSize"])
         self.tck_df = pd.DataFrame()
-        self.combo_dict = {}
         self.extender = extender
         self.time_of_tick_data_prev = 0
 
     def historicalData(self, reqId, bar):
         global df
+        global size
         dictionary = {'Time': bar.date, 'Open': bar.open, 'High': bar.high, 'Low': bar.low, 'Close': bar.close}
         df = df.append(dictionary, ignore_index=True)
+
         #logging.info(f'Time: {bar.date}, Open: {bar.open}, Close: {bar.close}')
 
     # Display a message once historical data is retreived
@@ -213,12 +264,22 @@ class ibrelay(EClient, EWrapper):
         logging.info('\nHistorical Data Retrieved\n')
 
         global df
+        global size
+        global dict_scrip
+
         logging.info(str(df.head()))
 
         df["Time"] = pd.to_datetime(df["Time"])
         df['E_Time'] = (((df["Time"] - dt.datetime(1970, 1, 1)).dt.total_seconds()) / 60).astype(int)
-        self.combo_dict[reqId] = df[["Time", "E_Time", "Close"]].to_records()
-        self.combo_dict[reqId].resize((self.extender, 1))
+
+        dict_scrip[reqId] = df[["Time", "E_Time", "Close"]].to_records()
+        dict_scrip[reqId].resize((self.extender, 1))
+
+        size = len(df.index)
+        dict_size[reqId] = size
+        logging.info("Dictionary size from historical data end -----------------------------------------")
+        logging.info(dict_size)
+
         #df = pd.DataFrame()
 
     def tickByTickBidAsk(self, reqId, time, bidPrice, askPrice,
@@ -226,19 +287,21 @@ class ibrelay(EClient, EWrapper):
         super().tickByTickBidAsk(reqId, time, bidPrice, askPrice, bidSize,
                                  askSize, tickAttribBidAsk)
         global global_bidPrice
+        global global_askPrice
         logging.info("BidAsk. ReqId:" + str(reqId) + "Time:"+ str(time) +
               "BidPrice:" + str(bidPrice) + "AskPrice:" + str(askPrice) + "BidSize:" + str(bidSize) +
               "AskSize:" + str(askSize) + "BidPastLow:" + str(tickAttribBidAsk.bidPastLow) + "AskPastHigh:" +
               str(tickAttribBidAsk.askPastHigh))
 
         global_bidPrice = bidPrice
+        global_askPrice = askPrice
 
         #Based on the value of the data in the global_dict,
         #global_dict[reqId] = bidPrice
 
 
-        # if (self.combo_dict[reqId - 2]["Time"].iloc[-1] != self.current_time):
-        #     self.combo_dict[reqId - 2] = self.combo_dict[reqId - 2].append(
+        # if (self.dict_scrip[reqId - 2]["Time"].iloc[-1] != self.current_time):
+        #     self.dict_scrip[reqId - 2] = self.dict_scrip[reqId - 2].append(
         #         {'E_Time': self.current_time, 'Close': round((bidPrice + askPrice) / 2, 5)}, ignore_index=True)
 
         '''

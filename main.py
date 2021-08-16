@@ -14,7 +14,7 @@ from loggingInitializer import *
 logging = initialize_logger("log")
 
 def main():
-    extender = 750
+    extender = 2000
     # combo_list = [["RELIANCE", "ADANIENT"]]
     #list_scrips = [["EUR", "CHF"]]
     list_scrips = [["EUR"]]
